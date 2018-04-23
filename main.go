@@ -21,7 +21,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"log/syslog"
+	// "log/syslog"
 	"os"
 	"strings"
 
@@ -40,12 +40,17 @@ func main() {
 		fmt.Println(Version)
 		os.Exit(0)
 	}
-
-	sysLog, err := syslog.New(syslog.LOG_INFO, "Linstor FlexVolume")
+	f, err := os.OpenFile("/tmp/linstor_log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatal(err)
+	    log.Fatalf("error opening file: %v", err)
 	}
-	log.SetOutput(sysLog)
+	defer f.Close()
+	log.SetOutput(f)
+	// sysLog, err := syslog.New(syslog.LOG_INFO, "Linstor FlexVolume")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// log.SetOutput(sysLog)
 
 	log.Printf("called with %s: %s", apiCall, strings.Join(os.Args[2:], ", "))
 

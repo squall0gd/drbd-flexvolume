@@ -46,6 +46,11 @@ type response struct {
 	Message string `json:"message"`
 }
 
+type initResponse struct {
+	response
+	Attach string `json:"attach"`
+}
+
 type attachResponse struct {
 	response
 	Device string `json:"device"`
@@ -97,7 +102,7 @@ func (api FlexVolumeApi) Call(s []string) (string, int) {
 	if len(s) < 1 {
 		res, _ := json.Marshal(response{
 			Status:  "Failure",
-			Message: flexAPIErr{"No driver action! Valid actions are: init, attach, detach, mountdevice, unmountdevice, isattached"}.Error(),
+			Message: flexAPIErr{"No driver action! Valid actions are: init, attach, detach, mountdevice, getvolumename, unmountdevice, isattached"}.Error(),
 		})
 		return string(res), EXITBADAPICALL
 	}
@@ -128,7 +133,12 @@ func (api FlexVolumeApi) Call(s []string) (string, int) {
 }
 
 func (api FlexVolumeApi) init() (string, int) {
-	res, _ := json.Marshal(response{Status: "Success"})
+	res, _ := json.Marshal(initResponse{
+		Attach: "False",
+		response: response{
+			Status: "Success",
+		},
+	})
 	return string(res), EXITSUCCESS
 }
 
@@ -157,7 +167,8 @@ func (api FlexVolumeApi) attach(s []string) (string, int) {
 		return string(res), EXITDRBDFAILURE
 	}
 
-	path, err := linstor.WaitForDevPath(resource, 30)
+	// path, err := linstor.WaitForDevPath(resource, 30)
+	path, err := linstor.GetDevPath(resource)
 	if err != nil {
 		res, _ := json.Marshal(response{
 			Status:  "Failure",
@@ -242,6 +253,9 @@ func (api FlexVolumeApi) mountDevice(s []string) (string, int) {
 			Status:  "Failure",
 			Message: flexAPIErr{fmt.Sprintf("%s: %v", s[0], err)}.Error(),
 		})
+		// WORKAROUND 
+		hostname, _ := os.Hostname()
+		resource := linstor.Resource{Name: opts.getResource(), ClientList: []string{hostname}}
 		return string(res), EXITDRBDFAILURE
 	}
 
